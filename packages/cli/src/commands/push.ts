@@ -1,6 +1,7 @@
-import { cancel, confirm, intro, isCancel, log, outro } from '@clack/prompts';
+import { cancel, confirm, intro, isCancel, log, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
 import {
+  adaptContent,
   applyDiffs,
   computeDiffs,
   computeDiffsForNewApps,
@@ -11,12 +12,63 @@ import {
   saveRegistry,
   updateEntry,
   type AppId,
+  type KenessElement,
+  type Provider,
+  type Registry,
+  type RegistryEntry,
+  type TargetDiff,
 } from '@keness/core';
 import { BRAND, MUTED, relPath, renderTargetDiff } from './_ui.js';
 
 interface PushOpts {
   to?: string;
   yes?: boolean;
+  aiAdapt?: boolean;
+  provider?: string;
+}
+
+async function applyAndFinish(
+  diffs: TargetDiff[],
+  entry: RegistryEntry,
+  element: KenessElement,
+  now: string,
+  opts: Pick<PushOpts, 'yes'>,
+  registry: Registry,
+): Promise<void> {
+  if (diffs.length === 0) {
+    log.warn('No targets found. Use --to <apps> to specify target apps.');
+    outro(chalk.hex(MUTED)('Nothing to do.'));
+    return;
+  }
+
+  const allUpToDate = diffs.every((d) => d.isUpToDate);
+  if (allUpToDate) {
+    outro(chalk.hex(MUTED)('All targets are up to date.'));
+    return;
+  }
+
+  for (const d of diffs) {
+    const adapter = getAdapter(d.appId);
+    renderTargetDiff(d, adapter?.name ?? d.appId);
+  }
+
+  if (!opts.yes) {
+    const go = await confirm({ message: 'Write these files?' });
+    if (isCancel(go) || !go) { cancel('Aborted — nothing written.'); return; }
+  }
+
+  const { written, updated } = applyDiffs(diffs, entry, now);
+  for (const p of written) log.success(relPath(p));
+
+  saveRegistry(
+    updateEntry(registry, entry.id, {
+      contentHash: hashContent(element.content),
+      targets: updated,
+      updatedAt: now,
+    }),
+  );
+
+  outro(chalk.hex(BRAND)('Done.'));
 }
 
 export async function runPush(id: string, opts: PushOpts): Promise<void> {
@@ -35,61 +87,58 @@ export async function runPush(id: string, opts: PushOpts): Promise<void> {
   const element = elementFromEntry(entry);
   const now = new Date().toISOString();
 
-  // Determine target app IDs
   const requestedIds = opts.to
     ? (opts.to.split(',').map((s) => s.trim()) as AppId[])
     : entry.targets.map((t) => t.appId);
 
-  // Split into existing targets and new ones
-  const existingIds = requestedIds.filter((id) =>
-    entry.targets.some((t) => t.appId === id),
+  const existingIds = requestedIds.filter((appId) =>
+    entry.targets.some((t) => t.appId === appId),
   );
   const newIds = requestedIds.filter(
-    (id) => !entry.targets.some((t) => t.appId === id),
+    (appId) => !entry.targets.some((t) => t.appId === appId),
   );
+
+  // --ai-adapt: rewrite content per-target using AI before computing diffs
+  if (opts.aiAdapt) {
+    const s = spinner();
+    s.start('AI adapting content for each target…');
+    try {
+      const allIds = [...existingIds, ...newIds];
+      const adaptedElements = new Map<AppId, KenessElement>();
+      for (const appId of allIds) {
+        const adapter = getAdapter(appId);
+        if (!adapter) continue;
+        const result = await adaptContent(element, adapter.name, {
+          ...(opts.provider && { provider: opts.provider as Provider }),
+        });
+        adaptedElements.set(appId, { ...element, content: result.content });
+      }
+      s.stop('AI adaptation complete');
+
+      const diffs: TargetDiff[] = [
+        ...existingIds.flatMap((appId) => {
+          const el = adaptedElements.get(appId) ?? element;
+          return computeDiffs(entry, el, [appId]);
+        }),
+        ...newIds.flatMap((appId) => {
+          const el = adaptedElements.get(appId) ?? element;
+          return computeDiffsForNewApps(entry, el, [appId], 'project');
+        }),
+      ];
+
+      await applyAndFinish(diffs, entry, element, now, opts, registry);
+      return;
+    } catch (err) {
+      s.stop('AI adaptation failed');
+      log.error(String(err));
+      return;
+    }
+  }
 
   const diffs = [
     ...computeDiffs(entry, element, existingIds.length ? existingIds : undefined),
     ...computeDiffsForNewApps(entry, element, newIds, 'project'),
   ];
 
-  if (diffs.length === 0) {
-    log.warn('No targets found. Use --to <apps> to specify target apps.');
-    outro(chalk.hex(MUTED)('Nothing to do.'));
-    return;
-  }
-
-  const allUpToDate = diffs.every((d) => d.isUpToDate);
-  if (allUpToDate) {
-    outro(chalk.hex(MUTED)('All targets are up to date.'));
-    return;
-  }
-
-  // Preview
-  for (const d of diffs) {
-    const adapter = getAdapter(d.appId);
-    renderTargetDiff(d, adapter?.name ?? d.appId);
-  }
-
-  // Confirm (skip with --yes)
-  if (!opts.yes) {
-    const go = await confirm({ message: 'Write these files?' });
-    if (isCancel(go) || !go) { cancel('Aborted — nothing written.'); return; }
-  }
-
-  // Apply
-  const { written, updated } = applyDiffs(diffs, entry, now);
-  for (const p of written) log.success(relPath(p));
-
-  // Update registry
-  const newContentHash = hashContent(element.content);
-  saveRegistry(
-    updateEntry(registry, entry.id, {
-      contentHash: newContentHash,
-      targets: updated,
-      updatedAt: now,
-    }),
-  );
-
-  outro(chalk.hex(BRAND)('Done.'));
+  await applyAndFinish(diffs, entry, element, now, opts, registry);
 }
