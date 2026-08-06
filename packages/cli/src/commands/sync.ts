@@ -1,7 +1,8 @@
-import { cancel, confirm, intro, isCancel, log, outro } from '@clack/prompts';
+import { cancel, confirm, intro, isCancel, log, outro, spinner } from '@clack/prompts';
 import chalk from 'chalk';
 import { existsSync, readFileSync } from 'node:fs';
 import {
+  adaptContent,
   applyDiffs,
   computeDiffs,
   elementFromEntry,
@@ -10,11 +11,15 @@ import {
   loadRegistry,
   saveRegistry,
   updateEntry,
+  type KenessElement,
+  type Provider,
 } from '@keness/core';
 import { BRAND, MUTED, relPath, renderTargetDiff } from './_ui.js';
 
 interface SyncOpts {
   yes?: boolean;
+  aiAdapt?: boolean;
+  provider?: string;
 }
 
 export async function runSync(id: string, opts: SyncOpts): Promise<void> {
@@ -30,7 +35,6 @@ export async function runSync(id: string, opts: SyncOpts): Promise<void> {
     return;
   }
 
-  // Re-read library content
   if (!existsSync(entry.contentPath)) {
     log.error(`Library content file not found: ${relPath(entry.contentPath)}`);
     return;
@@ -46,6 +50,66 @@ export async function runSync(id: string, opts: SyncOpts): Promise<void> {
   }
 
   const element = elementFromEntry(entry);
+
+  // --ai-adapt: rewrite content per-target using AI
+  if (opts.aiAdapt) {
+    const s = spinner();
+    s.start('AI adapting content for each target…');
+    let adaptedMap: Map<string, KenessElement>;
+    try {
+      adaptedMap = new Map();
+      for (const t of entry.targets) {
+        const adapter = getAdapter(t.appId);
+        if (!adapter) continue;
+        const result = await adaptContent(element, adapter.name, {
+          ...(opts.provider && { provider: opts.provider as Provider }),
+        });
+        adaptedMap.set(t.appId, { ...element, content: result.content });
+      }
+      s.stop('AI adaptation complete');
+    } catch (err) {
+      s.stop('AI adaptation failed');
+      log.error(String(err));
+      return;
+    }
+
+    const diffs = entry.targets.flatMap((t) => {
+      const el = adaptedMap.get(t.appId) ?? element;
+      return computeDiffs(entry, el, [t.appId]);
+    });
+
+    if (diffs.length === 0) {
+      outro(chalk.hex(MUTED)('No targets registered for this element.'));
+      return;
+    }
+
+    for (const d of diffs) {
+      const adapter = getAdapter(d.appId);
+      renderTargetDiff(d, adapter?.name ?? d.appId);
+    }
+
+    if (!opts.yes) {
+      const go = await confirm({ message: 'Sync to all targets?' });
+      if (isCancel(go) || !go) { cancel('Aborted — nothing written.'); return; }
+    }
+
+    const now = new Date().toISOString();
+    const { written, updated } = applyDiffs(diffs, entry, now);
+    for (const p of written) log.success(relPath(p));
+
+    saveRegistry(
+      updateEntry(registry, entry.id, {
+        contentHash: currentHash,
+        targets: updated,
+        updatedAt: now,
+      }),
+    );
+
+    outro(chalk.hex(BRAND)('Done.'));
+    return;
+  }
+
+  // Standard sync (no AI)
   const diffs = computeDiffs(entry, element);
 
   if (diffs.length === 0) {

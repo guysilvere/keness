@@ -8,7 +8,5 @@ function notImplemented(cmd: string): () => Promise<void> {
   };
 }
 
-export const runGenerate = notImplemented('generate');
-export const runAuth     = notImplemented('auth');
-export const runUi       = notImplemented('ui');
-export const runConfig   = notImplemented('config');
+export const runUi     = notImplemented('ui');
+export const runConfig = notImplemented('config');

@@ -6,3 +6,4 @@ export * from './adapters/index.js';
 export * from './writer.js';
 export * from './diff.js';
 export * from './sync-engine.js';
+export * from './generation/index.js';

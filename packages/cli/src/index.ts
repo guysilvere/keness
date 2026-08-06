@@ -7,12 +7,9 @@ import { runDiff }    from './commands/diff.js';
 import { runSync }    from './commands/sync.js';
 import { runRm }      from './commands/rm.js';
 import { runExport }  from './commands/export.js';
-import {
-  runGenerate,
-  runAuth,
-  runUi,
-  runConfig,
-} from './commands/stubs.js';
+import { runGenerate } from './commands/generate.js';
+import { runAuth }     from './commands/auth.js';
+import { runUi, runConfig } from './commands/stubs.js';
 
 const program = new Command();
 
@@ -44,6 +41,8 @@ program
   .description('Write/adapt an element to one or more tools')
   .option('--to <apps>', 'Comma-separated list of target apps')
   .option('-y, --yes', 'Skip preview confirmation')
+  .option('--ai-adapt', 'Use AI to rewrite content optimized for each target tool')
+  .option('--provider <name>', 'AI provider for --ai-adapt: anthropic | openai | google | custom')
   .action(runPush);
 
 program
@@ -56,6 +55,8 @@ program
   .command('sync <id>')
   .description('Re-push library content after a manual edit')
   .option('-y, --yes', 'Skip preview confirmation')
+  .option('--ai-adapt', 'Use AI to rewrite content optimized for each target tool')
+  .option('--provider <name>', 'AI provider for --ai-adapt: anthropic | openai | google | custom')
   .action(runSync);
 
 program
@@ -76,6 +77,7 @@ program
   .command('generate <type> <description>')
   .description('Generate element content from a natural language description (BYOK)')
   .option('--for <apps>', 'Comma-separated list of target apps')
+  .option('--provider <name>', 'AI provider: anthropic | openai | google | custom')
   .option('--dry-run', 'Compose prompt and display it without calling the API')
   .action(runGenerate);
 
