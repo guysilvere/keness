@@ -9,7 +9,8 @@ import { runRm }      from './commands/rm.js';
 import { runExport }  from './commands/export.js';
 import { runGenerate } from './commands/generate.js';
 import { runAuth }     from './commands/auth.js';
-import { runUi, runConfig } from './commands/stubs.js';
+import { runUi }    from './commands/ui.js';
+import { runConfig } from './commands/stubs.js';
 
 const program = new Command();
 

@@ -2,6 +2,10 @@
   "name": "@keness/web",
   "version": "0.0.1",
   "type": "module",
+  "main": "./dist/server/index.js",
+  "exports": {
+    ".": "./dist/server/index.js"
+  },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.server.json",
     "build:client": "vite build",
