@@ -15,12 +15,11 @@ const SUBPATHS: Record<ElementType, (name: string) => string> = {
   skill: (n) => join('skills', n, 'SKILL.md'),
   agent: (n) => join('agents', n, 'agent.md'),
   rule:  (n) => join('rules', `${n}.md`),
-  mcp:   (_) => 'mcp.json',
+  mcp:   (_n) => 'mcp.json',
 };
 
-function globalDir(platform: Platform): string {
+function globalDir(_platform: Platform): string {
   // Claude Code uses ~/.claude on all platforms (including Windows via WSL)
-  void platform;
   return resolveHome('.claude');
 }
 
@@ -28,6 +27,10 @@ function projectDir(): string {
   return join(findProjectRoot() ?? process.cwd(), '.claude');
 }
 
+/**
+ * Build a YAML frontmatter block.
+ * Claude Code skills expect at minimum a `description` field.
+ */
 function buildFrontmatter(el: KenessElement): string {
   const data: Record<string, unknown> = {
     description: el.description,
@@ -36,7 +39,11 @@ function buildFrontmatter(el: KenessElement): string {
   };
   const lines = ['---'];
   for (const [k, v] of Object.entries(data)) {
-    lines.push(`${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`);
+    if (typeof v === 'string') {
+      lines.push(`${k}: ${v}`);
+    } else {
+      lines.push(`${k}: ${JSON.stringify(v)}`);
+    }
   }
   lines.push('---', '');
   return lines.join('\n');
@@ -71,11 +78,18 @@ export const claudeCodeAdapter: AppAdapter = {
   format(el: KenessElement): AdaptedFile {
     const path = this.resolvePath(el.type, el.name, 'project');
     let content: string;
+
     if (el.type === 'mcp') {
-      content = JSON.stringify({ mcpServers: {} }, null, 2) + '\n';
+      // MCP: JSON config stub — user fills in the server entries
+      content = JSON.stringify(
+        { mcpServers: { [el.name]: { command: '', args: [], env: {} } } },
+        null,
+        2,
+      ) + '\n';
     } else {
-      content = `${buildFrontmatter(el)}# ${el.name}\n\n${el.content}`;
+      content = `${buildFrontmatter(el)}# ${el.name}\n\n${el.content}\n`;
     }
+
     return { content, path, permissions: 0o644 };
   },
 };

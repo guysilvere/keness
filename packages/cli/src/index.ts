@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { runDetect } from './commands/detect.js';
+import { runCreate } from './commands/create.js';
 import {
-  runCreate,
   runPush,
   runDiff,
   runSync,
@@ -28,7 +28,7 @@ program
   .action(runDetect);
 
 program
-  .command('create <type>')
+  .command('create [type]')
   .description('Create a skill, agent, rule or mcp config')
   .option('--for <apps>', 'Comma-separated list of target apps')
   .action(runCreate);

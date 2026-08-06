@@ -11,7 +11,14 @@ import type {
 import { resolveHome, resolveAppData, findProjectRoot } from '../paths.js';
 import { detectAdapter } from '../detect/index.js';
 
-// Cursor uses .mdc format for rules (Markdown with optional frontmatter)
+/**
+ * Cursor uses:
+ *  - .mdc files for rules (.cursor/rules/<name>.mdc)
+ *  - .md files for agents / skills (unofficial but conventional)
+ *
+ * The .mdc frontmatter schema that Cursor reads:
+ *   description, globs (file patterns), alwaysApply (bool)
+ */
 const SUBPATHS: Partial<Record<ElementType, (name: string) => string>> = {
   rule:  (n) => join('rules', `${n}.mdc`),
   agent: (n) => join('agents', `${n}.md`),
@@ -25,6 +32,20 @@ function globalDir(platform: Platform): string {
 
 function projectDir(): string {
   return join(findProjectRoot() ?? process.cwd(), '.cursor');
+}
+
+function buildMdcFrontmatter(el: KenessElement): string {
+  const globs: string = (el.frontmatter?.['globs'] as string) ?? '';
+  const alwaysApply: boolean =
+    (el.frontmatter?.['alwaysApply'] as boolean) ?? false;
+  return [
+    '---',
+    `description: ${el.description}`,
+    `globs: ${globs}`,
+    `alwaysApply: ${String(alwaysApply)}`,
+    '---',
+    '',
+  ].join('\n');
 }
 
 export const cursorAdapter: AppAdapter = {
@@ -55,11 +76,11 @@ export const cursorAdapter: AppAdapter = {
 
   format(el: KenessElement): AdaptedFile {
     const path = this.resolvePath(el.type, el.name, 'project');
-    // Cursor rules use a YAML frontmatter block then plain markdown
-    const fm = el.description
-      ? `---\ndescription: ${el.description}\n---\n\n`
-      : '';
-    const content = `${fm}# ${el.name}\n\n${el.content}`;
+    const fm =
+      el.type === 'rule'
+        ? buildMdcFrontmatter(el)
+        : `---\ndescription: ${el.description}\n---\n\n`;
+    const content = `${fm}# ${el.name}\n\n${el.content}\n`;
     return { content, path, permissions: 0o644 };
   },
 };

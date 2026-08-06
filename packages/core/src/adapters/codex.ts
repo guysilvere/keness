@@ -9,7 +9,7 @@ import type {
   Scope,
 } from '../types.js';
 import { resolveHome, findProjectRoot } from '../paths.js';
-import { detectAdapter } from '../detect/index.js';
+import { detectBinaryOnly } from '../detect/index.js';
 
 /**
  * Codex (OpenAI) uses a flat AGENTS.md file model.
@@ -29,7 +29,8 @@ export const codexAdapter: AppAdapter = {
   supports: ['skill', 'agent', 'rule'],
 
   async detect(): Promise<DetectionResult> {
-    return detectAdapter(this);
+    // Codex has no dedicated config dir — home dir always exists, so binary-only.
+    return detectBinaryOnly(this.id, this.binaryName);
   },
 
   configDir(scope: Scope, _platform?: Platform): string {

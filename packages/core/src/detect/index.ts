@@ -1,8 +1,8 @@
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import type { AppAdapter, DetectionResult, Platform } from '../types.js';
+import type { AppAdapter, AppId, DetectionResult, Platform } from '../types.js';
 
-function findBinary(name: string): string | null {
+export function findBinary(name: string): string | null {
   try {
     const cmd =
       process.platform === 'win32' ? `where "${name}"` : `which "${name}"`;
@@ -44,5 +44,19 @@ export async function detectAdapter(adapter: AppAdapter): Promise<DetectionResul
 export async function detectAll(
   adapters: ReadonlyArray<AppAdapter>,
 ): Promise<DetectionResult[]> {
-  return Promise.all(adapters.map((a) => detectAdapter(a)));
+  return Promise.all(adapters.map((a) => a.detect()));
+}
+
+/** For tools that have no dedicated config dir (e.g. Codex): binary check only. */
+export async function detectBinaryOnly(
+  appId: AppId,
+  binaryName: string,
+): Promise<DetectionResult> {
+  const binaryPath = findBinary(binaryName);
+  return {
+    appId,
+    detected: binaryPath !== null,
+    via: binaryPath !== null ? 'binary' : null,
+    ...(binaryPath !== null && { binaryPath }),
+  };
 }
