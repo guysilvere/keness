@@ -140,35 +140,60 @@ Application mono-utilisateur locale en v1 — pas de notion de rôle serveur. La
 
 ## 6. Architecture technique
 
-### Stack recommandée *(l'utilisateur n'a pas de préférence — choix argumenté ci-dessous)*
+### Stack retenue *(principe directeur : légèreté et open-source)*
 
-**Node.js / TypeScript**, en monorepo (ex. via `pnpm` workspaces ou `turborepo`), pour les raisons suivantes :
+**Node.js / TypeScript**, en monorepo via **pnpm workspaces** (sans couche de build supplémentaire), pour les raisons suivantes :
 - Un seul langage pour le CLI, le serveur du dashboard web, et — en roadmap — le shell Tauri (qui embarque une webview réutilisant directement l'UI web déjà développée, sans réécriture).
-- Écosystème mature pour ce cas d'usage précis : parsing YAML/TOML/frontmatter (`gray-matter`, `@iarna/toml`), CLI ergonomique (`commander` ou `oclif`), résolution de chemins cross-OS native (`os.homedir()`, `process.env.APPDATA`, `process.platform`).
+- Écosystème mature pour ce cas d'usage précis : parsing YAML/TOML/frontmatter (`gray-matter`, `@iarna/toml`), CLI ergonomique (`commander`), résolution de chemins cross-OS native (`os.homedir()`, `process.env.APPDATA`, `process.platform`).
 - Distribution facile et déjà standard dans cet écosystème : `npx keness`, `npm install -g keness`, cohérent avec la façon dont Claude Code, Opencode, Codex, Gemini CLI, etc. se distribuent déjà eux-mêmes.
 
-**Structure du monorepo proposée :**
+**Choix de légèreté explicites :**
+- **Pas de Turborepo** — `pnpm -r build` suffit pour 3 packages et respecte l'ordre topologique via les dépendances workspace. Turborepo sera réévalué si le nombre de packages dépasse 8-10.
+- **Preact** (3 kb) au lieu de React (45 kb) pour le dashboard web : API identique, surface mémoire négligeable.
+- **@clack/prompts** au lieu d'Inquirer pour les prompts interactifs CLI : plus léger, meilleure UX, zéro sous-dépendances lourdes.
+- **Vitest** pour les tests (partagé avec Vite, configuration unique, sans Jest).
+
+**Tableau récapitulatif de la stack :**
+
+| Couche | Outil | Licence |
+|---|---|---|
+| Monorepo | pnpm workspaces | MIT |
+| Langage | TypeScript 5 | Apache-2.0 |
+| CLI framework | commander | MIT |
+| CLI prompts | @clack/prompts | MIT |
+| CLI spinner | ora | MIT |
+| CLI couleurs | chalk | MIT |
+| Web server | Fastify | MIT |
+| Web frontend | Preact + Vite | MIT |
+| Tests | Vitest | MIT |
+| Lint | ESLint 9 + @typescript-eslint | MIT |
+| YAML/frontmatter | gray-matter | MIT |
+| TOML | @iarna/toml | ISC |
+
+**Structure du monorepo :**
 ```
 keness/
 ├── packages/
 │   ├── core/            # logique métier : bibliothèque, adaptateurs, détection, sync
-│   │   ├── src/
-│   │   │   ├── adapters/        # un module par outil cible
-│   │   │   │   ├── claude-code.ts
-│   │   │   │   ├── codex.ts
-│   │   │   │   ├── antigravity.ts
-│   │   │   │   ├── gemini-cli.ts
-│   │   │   │   ├── opencode.ts
-│   │   │   │   └── cursor.ts
-│   │   │   ├── detect/           # détection par OS + par outil
-│   │   │   ├── registry/         # lecture/écriture du manifeste local
-│   │   │   ├── sync-engine.ts    # orchestration create/push/sync/rm
-│   │   │   └── paths.ts          # résolution de chemins cross-OS
-│   │   └── package.json
-│   ├── cli/              # binaire `keness`, consomme `core`
-│   └── web/               # serveur local + frontend du dashboard, consomme `core`
-├── docs/                  # site vitrine / documentation (keness.dev)
-└── package.json
+│   │   └── src/
+│   │       ├── adapters/        # un module par outil cible
+│   │       │   ├── claude-code.ts
+│   │       │   ├── codex.ts
+│   │       │   ├── antigravity.ts
+│   │       │   ├── gemini-cli.ts
+│   │       │   ├── opencode.ts
+│   │       │   └── cursor.ts
+│   │       ├── detect/          # détection par OS + par outil
+│   │       ├── registry/        # lecture/écriture du manifeste local
+│   │       ├── generation/      # module BYOK (génération + adaptation IA)
+│   │       ├── sync-engine.ts   # orchestration create/push/sync/rm
+│   │       └── paths.ts         # résolution de chemins cross-OS
+│   ├── cli/             # binaire `keness`, consomme `core`
+│   └── web/             # serveur Fastify + frontend Preact/Vite, consomme `core`
+├── design/              # tokens de couleur (palette.ts, tokens.css)
+├── docs/                # site vitrine / documentation (keness.dev)
+├── package.json         # workspace root (pnpm)
+└── tsconfig.base.json   # config TypeScript partagée
 ```
 
 ### Modèle des "adaptateurs" (cœur de l'architecture)
