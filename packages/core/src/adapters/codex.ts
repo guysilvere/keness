@@ -41,11 +41,14 @@ export const codexAdapter: AppAdapter = {
   },
 
   resolvePath(
-    _type: ElementType,
+    type: ElementType,
     _name: string,
     scope: Scope,
     _platform?: Platform,
   ): string {
+    if (!this.supports.includes(type))
+      throw new Error(`Codex: unsupported type "${type}"`);
+    // All supported types (skill/agent/rule) are written as sections in AGENTS.md
     return agentsFilePath(scope);
   },
 
