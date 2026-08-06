@@ -17,8 +17,8 @@ Aucune date de lancement ferme n'a été communiquée au moment du cadrage — c
 
 ## 2. Étapes de développement (jusqu'au lancement)
 
-1. **Setup infrastructure** — monorepo initialisé (pnpm/turborepo), dépôt GitHub public créé, CI GitHub Actions de base (lint + build), squelette des packages `core`/`cli`/`web`.
-   *Jalon : `pnpm build` passe sur les 3 packages vides.*
+1. **Setup infrastructure** — monorepo initialisé (pnpm workspaces, sans Turborepo), dépôt GitHub public créé, CI GitHub Actions de base (lint + build), squelette des packages `core`/`cli`/`web`. Stack validée : Preact + Vite pour le dashboard, @clack/prompts pour les prompts CLI, Vitest pour les tests, Fastify pour le serveur web.
+   *Jalon : `pnpm build` passe sur les 3 packages.*
 
 2. **Fondations techniques** — module `paths.ts` (résolution de chemin par OS pour les 6 outils, global + projet), module `detect` (détection PATH + dossier de config), manifeste JSON du registre local.
    *Jalon : `keness detect` liste correctement les outils installés sur une machine de test Windows, une macOS, une Linux.*
@@ -88,7 +88,18 @@ Repoussées après le MVP (voir section 4 pour l'horizon précis) :
 
 ---
 
-## 5. Hypothèses de la roadmap
+## 5. Principes techniques transversaux
+
+Ces principes ont été validés explicitement et s'appliquent à toutes les étapes :
+
+- **Légèreté avant tout** : chaque dépendance doit être justifiée par un besoin concret. Pas de framework lourd si une alternative légère couvre le besoin (ex. Preact vs React, @clack vs Inquirer, pnpm scripts vs Turborepo).
+- **100 % open-source** : toutes les dépendances sont sous licence MIT ou équivalente (ISC, Apache-2.0). Aucune dépendance propriétaire ou à licence restrictive.
+- **Local-first** : aucune donnée ne quitte la machine de l'utilisateur sans action explicite — pas de télémétrie, pas de backend Keness, pas de compte obligatoire.
+- **Zéro compilation native** : éviter les modules natifs (`node-gyp`) pour garantir une installation cross-platform sans friction (`npm install -g keness` doit fonctionner sur les 3 OS sans prérequis supplémentaires).
+
+---
+
+## 6. Hypothèses de la roadmap
 
 - Le rythme de développement (répartition en 9 étapes) suppose une équipe réduite (1 à quelques développeurs) travaillant de façon itérative — à ajuster si l'effectif réel diffère.
 - La priorité donnée à "2 adaptateurs d'abord, puis les 6" est une hypothèse de gestion de risque technique (valider l'architecture avant de la généraliser) — à valider avec l'utilisateur si une couverture complète dès le lancement est jugée indispensable au positionnement du produit.

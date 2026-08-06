@@ -1,0 +1,41 @@
+/**
+ * Keness design tokens — CSS custom properties.
+ * Import this stylesheet at the root of packages/web and docs/.
+ * TypeScript mirror lives in palette.ts.
+ */
+
+:root {
+  /* ── Palette ─────────────────────────────────────────── */
+  --color-emerald:       #48bf84;
+  --color-coffee-bean:   #6d4c3d;
+  --color-lilac-ash:     #afaab9;
+  --color-parchment:     #ede6e3;
+  --color-emerald-depths: #00664d;
+
+  /* ── Semantic tokens — light mode (default) ──────────── */
+  --brand:               var(--color-emerald);
+  --brand-dark:          var(--color-emerald-depths);
+
+  --text-primary:        var(--color-coffee-bean);
+  --text-muted:          var(--color-lilac-ash);
+
+  --surface-base:        var(--color-parchment);
+  --surface-overlay:     var(--color-lilac-ash);
+
+  --accent-primary:      var(--color-emerald);
+  --accent-deep:         var(--color-emerald-depths);
+
+  /* ── Focus ring ──────────────────────────────────────── */
+  --focus-ring:          var(--color-emerald);
+}
+
+/* ── Dark mode overrides ─────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary:    var(--color-parchment);
+    --text-muted:      var(--color-lilac-ash);
+
+    --surface-base:    var(--color-coffee-bean);
+    --surface-overlay: #1a1210; /* deeper than coffee-bean for layering */
+  }
+}
