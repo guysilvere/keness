@@ -1,12 +1,13 @@
 import { Command } from 'commander';
-import { runDetect } from './commands/detect.js';
-import { runCreate } from './commands/create.js';
+import { runDetect }  from './commands/detect.js';
+import { runCreate }  from './commands/create.js';
+import { runList }    from './commands/list.js';
+import { runPush }    from './commands/push.js';
+import { runDiff }    from './commands/diff.js';
+import { runSync }    from './commands/sync.js';
+import { runRm }      from './commands/rm.js';
+import { runExport }  from './commands/export.js';
 import {
-  runPush,
-  runDiff,
-  runSync,
-  runRm,
-  runExport,
   runGenerate,
   runAuth,
   runUi,
@@ -28,10 +29,48 @@ program
   .action(runDetect);
 
 program
+  .command('list')
+  .description('List all registered elements')
+  .action(runList);
+
+program
   .command('create [type]')
   .description('Create a skill, agent, rule or mcp config')
   .option('--for <apps>', 'Comma-separated list of target apps')
   .action(runCreate);
+
+program
+  .command('push <id>')
+  .description('Write/adapt an element to one or more tools')
+  .option('--to <apps>', 'Comma-separated list of target apps')
+  .option('-y, --yes', 'Skip preview confirmation')
+  .action(runPush);
+
+program
+  .command('diff <id>')
+  .description('Preview pending changes before pushing')
+  .option('--for <apps>', 'Comma-separated list of target apps')
+  .action(runDiff);
+
+program
+  .command('sync <id>')
+  .description('Re-push library content after a manual edit')
+  .option('-y, --yes', 'Skip preview confirmation')
+  .action(runSync);
+
+program
+  .command('rm <id>')
+  .description('Delete an element from selected tools and/or the registry')
+  .option('--from <apps>', 'Target apps to remove from (comma-separated, or "all")')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(runRm);
+
+program
+  .command('export <id>')
+  .description('Archive element as JSON or portable shell script')
+  .option('--out <file>', 'Write to file instead of stdout')
+  .option('--format <fmt>', 'Output format: json (default) or sh')
+  .action(runExport);
 
 program
   .command('generate <type> <description>')
@@ -39,38 +78,6 @@ program
   .option('--for <apps>', 'Comma-separated list of target apps')
   .option('--dry-run', 'Compose prompt and display it without calling the API')
   .action(runGenerate);
-
-program
-  .command('push <id>')
-  .description('Write/adapt an element to one or more tools')
-  .option('--to <apps>', 'Comma-separated list of target apps')
-  .option('--ai-adapt', 'Use AI to adapt content when mechanical conversion loses fidelity')
-  .option('--yes', 'Skip preview confirmation')
-  .action(runPush);
-
-program
-  .command('diff <id>')
-  .description('Preview the adapted file before writing')
-  .option('--for <apps>', 'Comma-separated list of target apps')
-  .action(runDiff);
-
-program
-  .command('sync <id>')
-  .description('Replicate a manual edit to all linked tools')
-  .option('--ai-adapt', 'Use AI when converting between incompatible formats')
-  .option('--yes', 'Skip preview confirmation')
-  .action(runSync);
-
-program
-  .command('rm <id>')
-  .description('Delete an element from selected tools')
-  .option('--from <apps|all>', 'Target apps, or "all"')
-  .action(runRm);
-
-program
-  .command('export <id>')
-  .description('Archive element or print equivalent shell commands')
-  .action(runExport);
 
 program
   .command('auth')

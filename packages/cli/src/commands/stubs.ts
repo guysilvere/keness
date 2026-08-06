@@ -8,11 +8,6 @@ function notImplemented(cmd: string): () => Promise<void> {
   };
 }
 
-export const runPush     = notImplemented('push');
-export const runDiff     = notImplemented('diff');
-export const runSync     = notImplemented('sync');
-export const runRm       = notImplemented('rm');
-export const runExport   = notImplemented('export');
 export const runGenerate = notImplemented('generate');
 export const runAuth     = notImplemented('auth');
 export const runUi       = notImplemented('ui');
