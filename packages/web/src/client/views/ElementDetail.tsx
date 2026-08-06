@@ -109,6 +109,7 @@ export function ElementDetail({ id }: Props) {
                 <span class="diff-filepath muted">{shortenPath(d.filePath)}</span>
                 {d.isNew && <span class="tag-new">new</span>}
                 {d.isUpToDate && <span class="tag-ok">✓</span>}
+                {d.manuallyEdited && <span class="tag-warn" title="This file was manually edited outside Keness — pushing will overwrite those changes">⚠ manual edits</span>}
               </div>
               <DiffView diff={d} />
             </div>

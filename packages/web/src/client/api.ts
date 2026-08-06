@@ -48,6 +48,7 @@ export interface TargetDiff {
   current: string | null;
   isNew: boolean;
   isUpToDate: boolean;
+  manuallyEdited: boolean;
   lines: DiffLine[];
 }
 

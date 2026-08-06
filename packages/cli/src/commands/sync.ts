@@ -18,6 +18,7 @@ import { BRAND, MUTED, relPath, renderTargetDiff } from './_ui.js';
 
 interface SyncOpts {
   yes?: boolean;
+  dryRun?: boolean;
   aiAdapt?: boolean;
   provider?: string;
 }
@@ -88,6 +89,8 @@ export async function runSync(id: string, opts: SyncOpts): Promise<void> {
       renderTargetDiff(d, adapter?.name ?? d.appId);
     }
 
+    if (opts.dryRun) { outro(chalk.hex(MUTED)('Dry run — nothing written.')); return; }
+
     if (!opts.yes) {
       const go = await confirm({ message: 'Sync to all targets?' });
       if (isCancel(go) || !go) { cancel('Aborted — nothing written.'); return; }
@@ -127,6 +130,8 @@ export async function runSync(id: string, opts: SyncOpts): Promise<void> {
     const adapter = getAdapter(d.appId);
     renderTargetDiff(d, adapter?.name ?? d.appId);
   }
+
+  if (opts.dryRun) { outro(chalk.hex(MUTED)('Dry run — nothing written.')); return; }
 
   if (!opts.yes) {
     const go = await confirm({ message: 'Sync to all targets?' });

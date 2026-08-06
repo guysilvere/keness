@@ -51,6 +51,8 @@ export interface TargetState {
   scope: Scope;
   filePath: string;
   contentHash: string;
+  /** Hash of the adapted content actually written to disk (for divergence detection). */
+  writtenHash?: string;
   pushedAt: string;
 }
 

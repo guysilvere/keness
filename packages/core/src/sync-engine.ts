@@ -19,6 +19,8 @@ export interface TargetDiff {
   current: string | null;
   isNew: boolean;
   isUpToDate: boolean;
+  /** True when the on-disk file was manually edited since the last Keness push. */
+  manuallyEdited: boolean;
   lines: ReturnType<typeof diffLines>;
 }
 
@@ -60,6 +62,7 @@ export function computeDiffs(
         current: null,
         isNew: true,
         isUpToDate: false,
+        manuallyEdited: false,
         lines: [],
       };
     }
@@ -68,6 +71,13 @@ export function computeDiffs(
       ? readFileSync(adapted.path, 'utf8')
       : null;
     const lines = diffLines(current ?? '', adapted.content);
+    // Detect manual edits: file exists, differs from what Keness last wrote,
+    // and also differs from the new adapted content (so it's a real divergence).
+    const manuallyEdited =
+      current !== null &&
+      !!t.writtenHash &&
+      hashContent(current) !== t.writtenHash &&
+      hasDiff(lines);
     return {
       appId: t.appId,
       filePath: adapted.path,
@@ -75,6 +85,7 @@ export function computeDiffs(
       current,
       isNew: current === null,
       isUpToDate: current !== null && !hasDiff(lines),
+      manuallyEdited,
       lines,
     };
   });
@@ -100,6 +111,7 @@ export function computeDiffsForNewApps(
           current: null,
           isNew: true,
           isUpToDate: false,
+          manuallyEdited: false,
           lines: [],
         };
       }
@@ -115,6 +127,7 @@ export function computeDiffsForNewApps(
         current,
         isNew: current === null,
         isUpToDate: current !== null && !hasDiff(lines),
+        manuallyEdited: false, // new targets can't have been manually edited via Keness
         lines,
         _scope: scope,
       };
@@ -146,6 +159,7 @@ export function applyDiffs(
       scope: existing >= 0 ? updated[existing]!.scope : 'project',
       filePath: d.filePath,
       contentHash: hashContent(d.adapted),
+      writtenHash: hashContent(d.adapted),
       pushedAt: now,
     };
     if (existing >= 0) updated[existing] = state;

@@ -10,7 +10,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm -r --parallel dev",
-    "lint": "pnpm -r lint",
+    "lint": "eslint 'packages/*/src/**/*.ts' 'packages/*/src/**/*.tsx'",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "clean": "pnpm -r clean"

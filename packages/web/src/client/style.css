@@ -322,8 +322,9 @@ h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
 .diff-appid   { font-weight: 600; }
 .diff-filepath { font-size: 0.9em; }
 
-.tag-new { font-size: 0.7rem; padding: 0.1em 0.45em; border-radius: 3px; background: color-mix(in srgb, var(--brand) 18%, transparent); color: var(--brand-dark); font-weight: 600; }
-.tag-ok  { color: var(--brand); font-weight: bold; }
+.tag-new  { font-size: 0.7rem; padding: 0.1em 0.45em; border-radius: 3px; background: color-mix(in srgb, var(--brand) 18%, transparent); color: var(--brand-dark); font-weight: 600; }
+.tag-ok   { color: var(--brand); font-weight: bold; }
+.tag-warn { font-size: 0.7rem; padding: 0.1em 0.45em; border-radius: 3px; background: color-mix(in srgb, #f5a623 18%, transparent); color: #8a5a00; font-weight: 600; cursor: help; }
 
 .diff-ok { padding: 0.5rem 0.75rem; font-size: 0.82em; color: var(--brand-dark); }
 
