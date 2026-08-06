@@ -1,51 +1,49 @@
-import { useState, useEffect } from 'preact/hooks';
-
-interface DetectionResult {
-  appId: string;
-  detected: boolean;
-  via: string | null;
-  binaryPath?: string;
-  configDir?: string;
-}
+import { useRoute, navigate } from './router.js';
+import { Library }       from './views/Library.js';
+import { Apps }          from './views/Apps.js';
+import { Create }        from './views/Create.js';
+import { ElementDetail } from './views/ElementDetail.js';
 
 export function App() {
-  const [results, setResults] = useState<DetectionResult[]>([]);
-  const [loading, setLoading] = useState(true);
+  const route = useRoute();
 
-  useEffect(() => {
-    fetch('/api/detect')
-      .then((r) => r.json())
-      .then((data: { results: DetectionResult[] }) => {
-        setResults(data.results);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+  let view;
+  if (route.path === '/apps')    view = <Apps />;
+  else if (route.path === '/create')  view = <Create />;
+  else if (route.path === '/element') view = <ElementDetail id={route.params.id ?? ''} />;
+  else                                view = <Library />;
 
   return (
-    <div class="layout">
-      <header>
-        <span class="logo">keness</span>
-        <span class="badge">alpha</span>
-      </header>
+    <div class="app-shell">
+      <nav class="sidebar">
+        <div class="sidebar-logo">
+          <span class="logo">keness</span>
+          <span class="badge">alpha</span>
+        </div>
+        <ul class="nav-list">
+          <li>
+            <a
+              href="#/"
+              class={`nav-link ${route.path === '/' || route.path === '/element' ? 'nav-link--active' : ''}`}
+              onClick={(e) => { e.preventDefault(); navigate('#/'); }}
+            >
+              Library
+            </a>
+          </li>
+          <li>
+            <a
+              href="#/apps"
+              class={`nav-link ${route.path === '/apps' ? 'nav-link--active' : ''}`}
+              onClick={(e) => { e.preventDefault(); navigate('#/apps'); }}
+            >
+              Apps
+            </a>
+          </li>
+        </ul>
+      </nav>
 
-      <main>
-        <h1>Detected tools</h1>
-        {loading ? (
-          <p class="muted">Scanning…</p>
-        ) : (
-          <ul class="tool-list">
-            {results.map((r) => (
-              <li key={r.appId} class={r.detected ? 'detected' : 'missing'}>
-                <span class="dot">{r.detected ? '✓' : '–'}</span>
-                <span class="name">{r.appId}</span>
-                {r.detected && (
-                  <span class="path">{r.configDir ?? r.binaryPath}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+      <main class="main-content">
+        {view}
       </main>
     </div>
   );

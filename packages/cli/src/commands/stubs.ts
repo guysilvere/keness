@@ -8,5 +8,4 @@ function notImplemented(cmd: string): () => Promise<void> {
   };
 }
 
-export const runUi     = notImplemented('ui');
 export const runConfig = notImplemented('config');
