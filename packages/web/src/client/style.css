@@ -1,0 +1,96 @@
+/* Import Keness design tokens */
+:root {
+  --color-emerald:        #48bf84;
+  --color-coffee-bean:    #6d4c3d;
+  --color-lilac-ash:      #afaab9;
+  --color-parchment:      #ede6e3;
+  --color-emerald-depths: #00664d;
+
+  --brand:          var(--color-emerald);
+  --brand-dark:     var(--color-emerald-depths);
+  --text-primary:   var(--color-coffee-bean);
+  --text-muted:     var(--color-lilac-ash);
+  --surface-base:   var(--color-parchment);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary:  var(--color-parchment);
+    --text-muted:    var(--color-lilac-ash);
+    --surface-base:  var(--color-coffee-bean);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Courier New', Courier, monospace;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  min-height: 100dvh;
+}
+
+.layout {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.logo {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--brand);
+  letter-spacing: -0.02em;
+}
+
+.badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15em 0.5em;
+  border: 1px solid var(--brand-dark);
+  color: var(--brand-dark);
+  border-radius: 3px;
+}
+
+h1 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.tool-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tool-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface-base) 60%, transparent);
+  border: 1px solid transparent;
+}
+
+.tool-list li.detected { border-color: var(--brand); }
+.tool-list li.missing  { opacity: 0.5; }
+
+.dot { width: 1.2ch; color: var(--brand); font-weight: bold; }
+.name { flex: 0 0 auto; min-width: 14ch; }
+.path { color: var(--text-muted); font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.muted { color: var(--text-muted); }
