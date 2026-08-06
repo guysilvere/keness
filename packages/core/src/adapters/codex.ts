@@ -52,8 +52,8 @@ export const codexAdapter: AppAdapter = {
     return agentsFilePath(scope);
   },
 
-  format(el: KenessElement): AdaptedFile {
-    const path = agentsFilePath('project');
+  format(el: KenessElement, scope: Scope = 'project'): AdaptedFile {
+    const path = this.resolvePath(el.type, el.name, scope);
     // Codex: elements are written as H2 sections in AGENTS.md
     const content = `## ${el.name}\n\n${el.description ? `> ${el.description}\n\n` : ''}${el.content}`;
     return { content, path, permissions: 0o644 };

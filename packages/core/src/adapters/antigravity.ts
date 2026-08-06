@@ -49,8 +49,8 @@ export const antigravityAdapter: AppAdapter = {
     return join(this.configDir(scope, platform), `${name}.md`);
   },
 
-  format(el: KenessElement): AdaptedFile {
-    const path = this.resolvePath(el.type, el.name, 'project');
+  format(el: KenessElement, scope: Scope = 'project'): AdaptedFile {
+    const path = this.resolvePath(el.type, el.name, scope);
     // Antigravity expects description written in the third person
     const fm = `---\ndescription: ${el.description}\n---\n\n`;
     const content = `${fm}# ${el.name}\n\n${el.content}`;

@@ -74,8 +74,8 @@ export const cursorAdapter: AppAdapter = {
     return join(base, sub);
   },
 
-  format(el: KenessElement): AdaptedFile {
-    const path = this.resolvePath(el.type, el.name, 'project');
+  format(el: KenessElement, scope: Scope = 'project'): AdaptedFile {
+    const path = this.resolvePath(el.type, el.name, scope);
     const fm =
       el.type === 'rule'
         ? buildMdcFrontmatter(el)

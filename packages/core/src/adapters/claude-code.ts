@@ -75,8 +75,8 @@ export const claudeCodeAdapter: AppAdapter = {
     return join(base, sub);
   },
 
-  format(el: KenessElement): AdaptedFile {
-    const path = this.resolvePath(el.type, el.name, 'project');
+  format(el: KenessElement, scope: Scope = 'project'): AdaptedFile {
+    const path = this.resolvePath(el.type, el.name, scope);
     let content: string;
 
     if (el.type === 'mcp') {

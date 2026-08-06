@@ -7,3 +7,10 @@ coverage/
 .env.local
 .DS_Store
 vite.config.ts.timestamp-*.mjs
+.pnpm-store/
+.claude/
+.cursor/
+.gemini/
+.opencode/
+.agents/
+AGENTS.md

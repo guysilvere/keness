@@ -97,43 +97,47 @@ export function registerApiRoutes(app: FastifyInstance): void {
   });
 
   // ── Push ──────────────────────────────────────────────────────────────────────
+  // ── Push ──────────────────────────────────────────────────────────────────────
   app.post<{
     Params: { id: string };
     Body: { to?: string[]; dryRun?: boolean };
   }>('/api/registry/:id/push', async (req, reply) => {
-    const registry = loadRegistry();
-    const entry = findEntry(registry.entries, req.params.id);
-    if (!entry) { reply.code(404); return { error: 'Not found' }; }
+    try {
+      const registry = loadRegistry();
+      const entry = findEntry(registry.entries, req.params.id);
+      if (!entry) { reply.code(404); return { error: 'Not found' }; }
 
-    // Only allow known app IDs; silently drop the rest rather than propagating
-    // untrusted strings into adapter resolution.
-    const requestedIds = (req.body?.to ?? []) as string[];
-    const appIds: AppId[] = requestedIds.length
-      ? requestedIds.filter((id): id is AppId => VALID_APP_IDS.has(id as AppId))
-      : entry.targets.map((t) => t.appId);
+      const requestedIds = (req.body?.to ?? []) as string[];
+      const appIds: AppId[] = requestedIds.length
+        ? requestedIds.filter((id): id is AppId => VALID_APP_IDS.has(id as AppId))
+        : entry.targets.map((t) => t.appId);
 
-    const element  = elementFromEntry(entry);
-    const now      = new Date().toISOString();
-    const dryRun   = req.body?.dryRun === true;
-    const existing = appIds.filter((id) => entry.targets.some((t) => t.appId === id));
-    const newIds   = appIds.filter((id) => !entry.targets.some((t) => t.appId === id));
+      const element  = elementFromEntry(entry);
+      const now      = new Date().toISOString();
+      const dryRun   = req.body?.dryRun === true;
+      const existing = appIds.filter((id) => entry.targets.some((t) => t.appId === id));
+      const newIds   = appIds.filter((id) => !entry.targets.some((t) => t.appId === id));
 
-    const diffs = [
-      ...computeDiffs(entry, element, existing.length ? existing : undefined),
-      ...computeDiffsForNewApps(entry, element, newIds, 'project'),
-    ];
+      const diffs = [
+        ...computeDiffs(entry, element, existing.length ? existing : undefined),
+        ...computeDiffsForNewApps(entry, element, newIds, 'project'),
+      ];
 
-    if (dryRun) return { written: [], diffs };
+      if (dryRun) return { written: [], diffs };
 
-    const { written, updated } = applyDiffs(diffs, entry, now);
-    saveRegistry(
-      updateEntry(registry, entry.id, {
-        contentHash: hashContent(element.content),
-        targets: updated,
-        updatedAt: now,
-      }),
-    );
-    return { written };
+      const { written, updated } = applyDiffs(diffs, entry, now);
+      saveRegistry(
+        updateEntry(registry, entry.id, {
+          contentHash: hashContent(element.content),
+          targets: updated,
+          updatedAt: now,
+        }),
+      );
+      return { written };
+    } catch (err) {
+      reply.code(500);
+      return { error: (err as Error).message };
+    }
   });
 
   // ── Sync ──────────────────────────────────────────────────────────────────────
@@ -141,26 +145,31 @@ export function registerApiRoutes(app: FastifyInstance): void {
     Params: { id: string };
     Body: { dryRun?: boolean };
   }>('/api/registry/:id/sync', async (req, reply) => {
-    const registry = loadRegistry();
-    const entry = findEntry(registry.entries, req.params.id);
-    if (!entry) { reply.code(404); return { error: 'Not found' }; }
+    try {
+      const registry = loadRegistry();
+      const entry = findEntry(registry.entries, req.params.id);
+      if (!entry) { reply.code(404); return { error: 'Not found' }; }
 
-    const element = elementFromEntry(entry);
-    const now     = new Date().toISOString();
-    const dryRun  = req.body?.dryRun === true;
-    const diffs   = computeDiffs(entry, element);
+      const element = elementFromEntry(entry);
+      const now     = new Date().toISOString();
+      const dryRun  = req.body?.dryRun === true;
+      const diffs   = computeDiffs(entry, element);
 
-    if (dryRun) return { written: [], diffs };
+      if (dryRun) return { written: [], diffs };
 
-    const { written, updated } = applyDiffs(diffs, entry, now);
-    saveRegistry(
-      updateEntry(registry, entry.id, {
-        contentHash: hashContent(element.content),
-        targets: updated,
-        updatedAt: now,
-      }),
-    );
-    return { written };
+      const { written, updated } = applyDiffs(diffs, entry, now);
+      saveRegistry(
+        updateEntry(registry, entry.id, {
+          contentHash: hashContent(element.content),
+          targets: updated,
+          updatedAt: now,
+        }),
+      );
+      return { written };
+    } catch (err) {
+      reply.code(500);
+      return { error: (err as Error).message };
+    }
   });
 
   // ── Remove ────────────────────────────────────────────────────────────────────
@@ -168,32 +177,37 @@ export function registerApiRoutes(app: FastifyInstance): void {
     Params: { id: string };
     Body: { from?: string[] };
   }>('/api/registry/:id', async (req, reply) => {
-    const registry = loadRegistry();
-    const entry = findEntry(registry.entries, req.params.id);
-    if (!entry) { reply.code(404); return { error: 'Not found' }; }
+    try {
+      const registry = loadRegistry();
+      const entry = findEntry(registry.entries, req.params.id);
+      if (!entry) { reply.code(404); return { error: 'Not found' }; }
 
-    const rawFrom = req.body?.from as string[] | undefined;
-    const removeFrom = rawFrom
-      ? rawFrom.filter((id): id is AppId => VALID_APP_IDS.has(id as AppId))
-      : undefined;
+      const rawFrom = req.body?.from as string[] | undefined;
+      const removeFrom = rawFrom
+        ? rawFrom.filter((id): id is AppId => VALID_APP_IDS.has(id as AppId))
+        : undefined;
 
-    const removed = removeTargetFiles(
-      removeFrom
-        ? { ...entry, targets: entry.targets.filter((t) => removeFrom.includes(t.appId)) }
-        : entry,
-    );
-
-    const deleteEntry = !removeFrom || removeFrom.length >= entry.targets.length;
-    if (deleteEntry) {
-      saveRegistry(removeEntry(registry, entry.id));
-    } else {
-      saveRegistry(
-        updateEntry(registry, entry.id, {
-          targets: entry.targets.filter((t) => !removeFrom!.includes(t.appId)),
-        }),
+      const removed = removeTargetFiles(
+        removeFrom
+          ? { ...entry, targets: entry.targets.filter((t) => removeFrom.includes(t.appId)) }
+          : entry,
       );
+
+      const deleteEntry = !removeFrom || removeFrom.length >= entry.targets.length;
+      if (deleteEntry) {
+        saveRegistry(removeEntry(registry, entry.id));
+      } else {
+        saveRegistry(
+          updateEntry(registry, entry.id, {
+            targets: entry.targets.filter((t) => !removeFrom!.includes(t.appId)),
+          }),
+        );
+      }
+      return { removed, deletedEntry: deleteEntry };
+    } catch (err) {
+      reply.code(500);
+      return { error: (err as Error).message };
     }
-    return { removed, deletedEntry: deleteEntry };
   });
 
   // ── Create ────────────────────────────────────────────────────────────────────
@@ -207,83 +221,85 @@ export function registerApiRoutes(app: FastifyInstance): void {
       scope: Scope;
     };
   }>('/api/registry', async (req, reply) => {
-    const { type, name, description, content, appIds, scope } = req.body;
+    try {
+      const { type, name, description, content, appIds, scope } = req.body ?? {};
 
-    // Validate element type
-    if (!type || !VALID_TYPES.has(type)) {
-      reply.code(400);
-      return { error: `Invalid type. Must be one of: ${[...VALID_TYPES].join(', ')}` };
+      // Validate element type
+      if (!type || !VALID_TYPES.has(type)) {
+        reply.code(400);
+        return { error: `Invalid type. Must be one of: ${[...VALID_TYPES].join(', ')}` };
+      }
+
+      // Validate and sanitize name — reject path traversal attempts
+      const safeName = sanitizeName(name);
+      if (!safeName) {
+        reply.code(400);
+        return { error: 'Invalid name. Use alphanumerics, hyphens, underscores only (max 64 chars).' };
+      }
+
+      // Validate scope
+      const effectiveScope: Scope = (scope && VALID_SCOPES.has(scope)) ? scope : 'global';
+
+      // Validate appIds — filter to known adapters only
+      if (!appIds?.length) {
+        reply.code(400);
+        return { error: 'type, name and appIds are required' };
+      }
+      const safeAppIds = appIds.filter((id): id is AppId => VALID_APP_IDS.has(id as AppId));
+      if (safeAppIds.length === 0) {
+        reply.code(400);
+        return { error: `No valid appIds provided. Known apps: ${[...VALID_APP_IDS].join(', ')}` };
+      }
+
+      // Scan content for suspicious patterns
+      const scan = scanContent(content ?? '');
+      if (scan.suspicious) {
+        reply.code(422);
+        return { error: 'Suspicious content detected', warnings: scan.warnings };
+      }
+
+      const now = new Date().toISOString();
+      const id  = randomUUID().slice(0, 8);
+      const element = {
+        id, type, name: safeName,
+        description: description ?? '',
+        content: content ?? '',
+        createdAt: now, updatedAt: now,
+      };
+
+      const libDir      = kenessLibraryDir(type, safeName);
+      const contentPath = join(libDir, 'content.md');
+      mkdirSync(libDir, { recursive: true });
+      writeFileSync(contentPath, content ?? '', 'utf8');
+
+      const targets = [];
+      for (const appId of safeAppIds) {
+        const adapter = getAdapter(appId);
+        if (!adapter) continue;
+        const adapted = adapter.format(element, effectiveScope);
+        mkdirSync(join(adapted.path, '..'), { recursive: true });
+        writeFileSync(adapted.path, adapted.content, { mode: adapted.permissions });
+        targets.push({
+          appId,
+          scope: effectiveScope,
+          filePath: adapted.path,
+          contentHash: hashContent(adapted.content),
+          writtenHash: hashContent(adapted.content),
+          pushedAt: now,
+        });
+      }
+
+      const registry = loadRegistry();
+      const entry = {
+        id, type, name: safeName, description: description ?? '', contentPath,
+        contentHash: hashContent(content ?? ''),
+        targets, tags: [], createdAt: now, updatedAt: now,
+      };
+      saveRegistry(addEntry(registry, entry));
+      return { entry };
+    } catch (err) {
+      reply.code(500);
+      return { error: (err as Error).message };
     }
-
-    // Validate and sanitize name — reject path traversal attempts
-    const safeName = sanitizeName(name);
-    if (!safeName) {
-      reply.code(400);
-      return { error: 'Invalid name. Use alphanumerics, hyphens, underscores only (max 64 chars).' };
-    }
-
-    // Validate scope
-    if (scope && !VALID_SCOPES.has(scope)) {
-      reply.code(400);
-      return { error: `Invalid scope. Must be one of: ${[...VALID_SCOPES].join(', ')}` };
-    }
-
-    // Validate appIds — filter to known adapters only
-    if (!appIds?.length) {
-      reply.code(400);
-      return { error: 'type, name and appIds are required' };
-    }
-    const safeAppIds = appIds.filter((id): id is AppId => VALID_APP_IDS.has(id as AppId));
-    if (safeAppIds.length === 0) {
-      reply.code(400);
-      return { error: `No valid appIds provided. Known apps: ${[...VALID_APP_IDS].join(', ')}` };
-    }
-
-    // Scan content for suspicious patterns
-    const scan = scanContent(content ?? '');
-    if (scan.suspicious) {
-      reply.code(422);
-      return { error: 'Suspicious content detected', warnings: scan.warnings };
-    }
-
-    const now = new Date().toISOString();
-    const id  = randomUUID().slice(0, 8);
-    const element = {
-      id, type, name: safeName,
-      description: description ?? '',
-      content: content ?? '',
-      createdAt: now, updatedAt: now,
-    };
-
-    const libDir      = kenessLibraryDir(type, safeName);
-    const contentPath = join(libDir, 'content.md');
-    mkdirSync(libDir, { recursive: true });
-    writeFileSync(contentPath, content ?? '', 'utf8');
-
-    const targets = [];
-    for (const appId of safeAppIds) {
-      const adapter = getAdapter(appId);
-      if (!adapter) continue;
-      const adapted = adapter.format(element);
-      mkdirSync(join(adapted.path, '..'), { recursive: true });
-      writeFileSync(adapted.path, adapted.content, { mode: adapted.permissions });
-      targets.push({
-        appId,
-        scope,
-        filePath: adapted.path,
-        contentHash: hashContent(adapted.content),
-        writtenHash: hashContent(adapted.content),
-        pushedAt: now,
-      });
-    }
-
-    const registry = loadRegistry();
-    const entry = {
-      id, type, name: safeName, description: description ?? '', contentPath,
-      contentHash: hashContent(content ?? ''),
-      targets, tags: [], createdAt: now, updatedAt: now,
-    };
-    saveRegistry(addEntry(registry, entry));
-    return { entry };
   });
 }

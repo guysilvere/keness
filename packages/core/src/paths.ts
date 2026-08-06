@@ -7,7 +7,7 @@ export function homeDir(): string {
 }
 
 export function kenessDir(): string {
-  return join(homedir(), '.keness');
+  return process.env['KENESS_DIR'] ?? join(homedir(), '.keness');
 }
 
 export function kenessLibraryDir(type: string, name: string): string {
@@ -19,7 +19,8 @@ export function kenessRegistryPath(): string {
 }
 
 export function resolveHome(...parts: string[]): string {
-  return join(homedir(), ...parts);
+  const home = process.env['KENESS_HOME'] ?? homedir();
+  return join(home, ...parts);
 }
 
 export function resolveAppData(...parts: string[]): string {

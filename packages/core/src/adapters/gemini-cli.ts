@@ -47,8 +47,8 @@ export const geminiCliAdapter: AppAdapter = {
     return join(base, `${name}.md`);
   },
 
-  format(el: KenessElement): AdaptedFile {
-    const path = this.resolvePath(el.type, el.name, 'project');
+  format(el: KenessElement, scope: Scope = 'project'): AdaptedFile {
+    const path = this.resolvePath(el.type, el.name, scope);
     const content = `# ${el.name}\n\n${el.description ? `${el.description}\n\n` : ''}${el.content}`;
     return { content, path, permissions: 0o644 };
   },

@@ -43,7 +43,7 @@ export interface AppAdapter {
   detect(): Promise<DetectionResult>;
   configDir(scope: Scope, platform?: Platform): string;
   resolvePath(type: ElementType, name: string, scope: Scope, platform?: Platform): string;
-  format(element: KenessElement): AdaptedFile;
+  format(element: KenessElement, scope?: Scope): AdaptedFile;
 }
 
 export interface TargetState {
