@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { log, note } from '@clack/prompts';
 import { hunks } from '@keness/core';
-import type { DiffLine, TargetDiff } from '@keness/core';
+import type { DiffLine, ScanWarning, TargetDiff } from '@keness/core';
 
 const BRAND = '#48bf84';
 const MUTED  = '#afaab9';
@@ -17,12 +17,26 @@ export function renderDiffLine(l: DiffLine): string {
   return chalk.hex(MUTED)('  ' + l.text);
 }
 
+export function renderScanWarnings(warnings: ScanWarning[]): void {
+  for (const w of warnings) {
+    const loc = w.line != null ? ` (line ${w.line})` : '';
+    log.warn(chalk.yellow(`[${w.code}]${loc} ${w.message}`));
+  }
+}
+
 export function renderTargetDiff(d: TargetDiff, appName: string): void {
   const label = `${appName}  ${chalk.hex(MUTED)(relPath(d.filePath))}`;
 
   if (d.isUpToDate) {
     log.info(`${chalk.hex(MUTED)(appName)} — up to date`);
     return;
+  }
+
+  if (d.manuallyEdited) {
+    log.warn(
+      chalk.yellow(`${appName} — `) +
+      'file was manually edited since last push — changes shown below will overwrite your edits',
+    );
   }
 
   if (d.isNew) {

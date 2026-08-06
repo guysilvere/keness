@@ -23,6 +23,7 @@ import {
   kenessLibraryDir,
   loadRegistry,
   saveRegistry,
+  scanContent,
   writeAdaptedFile,
   type AppId,
   type ElementType,
@@ -30,6 +31,7 @@ import {
   type Scope,
   type TargetState,
 } from '@keness/core';
+import { renderScanWarnings } from './_ui.js';
 
 const BRAND = '#48bf84';
 const MUTED  = '#afaab9';
@@ -130,6 +132,15 @@ export async function runCreate(
   });
   if (isCancel(contentRaw)) { cancel('Cancelled.'); return; }
 
+  // ── 6b. Security scan ─────────────────────────────────────────────────────
+  const scan = scanContent((contentRaw ?? '').trim());
+  if (scan.suspicious) {
+    log.warn('Suspicious patterns detected in content:');
+    renderScanWarnings(scan.warnings);
+    const proceed = await confirm({ message: 'Continue anyway?' });
+    if (isCancel(proceed) || !proceed) { cancel('Aborted — nothing written.'); return; }
+  }
+
   const now = new Date().toISOString();
   const id  = randomUUID().slice(0, 8);
 
@@ -171,6 +182,7 @@ export async function runCreate(
         scope,
         filePath: adapted.path,
         contentHash: hashContent(adapted.content),
+        writtenHash: hashContent(adapted.content),
         pushedAt: now,
       });
     } catch (err) {

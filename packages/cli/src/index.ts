@@ -42,6 +42,7 @@ program
   .description('Write/adapt an element to one or more tools')
   .option('--to <apps>', 'Comma-separated list of target apps')
   .option('-y, --yes', 'Skip preview confirmation')
+  .option('--dry-run', 'Preview changes without writing any files')
   .option('--ai-adapt', 'Use AI to rewrite content optimized for each target tool')
   .option('--provider <name>', 'AI provider for --ai-adapt: anthropic | openai | google | custom')
   .action(runPush);
@@ -56,6 +57,7 @@ program
   .command('sync <id>')
   .description('Re-push library content after a manual edit')
   .option('-y, --yes', 'Skip preview confirmation')
+  .option('--dry-run', 'Preview changes without writing any files')
   .option('--ai-adapt', 'Use AI to rewrite content optimized for each target tool')
   .option('--provider <name>', 'AI provider for --ai-adapt: anthropic | openai | google | custom')
   .action(runSync);
@@ -65,6 +67,7 @@ program
   .description('Delete an element from selected tools and/or the registry')
   .option('--from <apps>', 'Target apps to remove from (comma-separated, or "all")')
   .option('-y, --yes', 'Skip confirmation prompt')
+  .option('--dry-run', 'Preview what would be deleted without removing anything')
   .action(runRm);
 
 program

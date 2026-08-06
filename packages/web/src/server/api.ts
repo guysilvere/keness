@@ -17,6 +17,7 @@ import {
   removeEntry,
   removeTargetFiles,
   saveRegistry,
+  scanContent,
   updateEntry,
   type AppId,
   type ElementType,
@@ -66,7 +67,7 @@ export function registerApiRoutes(app: FastifyInstance): void {
   // ── Push ──────────────────────────────────────────────────────────────────────
   app.post<{
     Params: { id: string };
-    Body: { to?: string[] };
+    Body: { to?: string[]; dryRun?: boolean };
   }>('/api/registry/:id/push', async (req, reply) => {
     const registry = loadRegistry();
     const entry = registry.entries.find(
@@ -76,6 +77,7 @@ export function registerApiRoutes(app: FastifyInstance): void {
 
     const element  = elementFromEntry(entry);
     const now      = new Date().toISOString();
+    const dryRun   = req.body?.dryRun === true;
     const appIds   = (req.body?.to as AppId[] | undefined) ?? entry.targets.map((t) => t.appId);
     const existing = appIds.filter((id) => entry.targets.some((t) => t.appId === id));
     const newIds   = appIds.filter((id) => !entry.targets.some((t) => t.appId === id));
@@ -84,6 +86,8 @@ export function registerApiRoutes(app: FastifyInstance): void {
       ...computeDiffs(entry, element, existing.length ? existing : undefined),
       ...computeDiffsForNewApps(entry, element, newIds, 'project'),
     ];
+
+    if (dryRun) return { written: [], diffs };
 
     const { written, updated } = applyDiffs(diffs, entry, now);
     saveRegistry(
@@ -97,7 +101,10 @@ export function registerApiRoutes(app: FastifyInstance): void {
   });
 
   // ── Sync ──────────────────────────────────────────────────────────────────────
-  app.post<{ Params: { id: string } }>('/api/registry/:id/sync', async (req, reply) => {
+  app.post<{
+    Params: { id: string };
+    Body: { dryRun?: boolean };
+  }>('/api/registry/:id/sync', async (req, reply) => {
     const registry = loadRegistry();
     const entry = registry.entries.find(
       (e) => e.id === req.params.id || e.id.startsWith(req.params.id),
@@ -106,7 +113,11 @@ export function registerApiRoutes(app: FastifyInstance): void {
 
     const element = elementFromEntry(entry);
     const now     = new Date().toISOString();
+    const dryRun  = req.body?.dryRun === true;
     const diffs   = computeDiffs(entry, element);
+
+    if (dryRun) return { written: [], diffs };
+
     const { written, updated } = applyDiffs(diffs, entry, now);
     saveRegistry(
       updateEntry(registry, entry.id, {
@@ -167,6 +178,12 @@ export function registerApiRoutes(app: FastifyInstance): void {
       return { error: 'type, name and appIds are required' };
     }
 
+    const scan = scanContent(content ?? '');
+    if (scan.suspicious) {
+      reply.code(422);
+      return { error: 'Suspicious content detected', warnings: scan.warnings };
+    }
+
     const now = new Date().toISOString();
     const id  = randomUUID().slice(0, 8);
     const element = { id, type, name, description: description ?? '', content: content ?? '', createdAt: now, updatedAt: now };
@@ -188,6 +205,7 @@ export function registerApiRoutes(app: FastifyInstance): void {
         scope,
         filePath: adapted.path,
         contentHash: hashContent(adapted.content),
+        writtenHash: hashContent(adapted.content),
         pushedAt: now,
       });
     }

@@ -11,6 +11,7 @@ import { BRAND, MUTED, relPath } from './_ui.js';
 interface RmOpts {
   from?: string;
   yes?: boolean;
+  dryRun?: boolean;
 }
 
 export async function runRm(id: string, opts: RmOpts): Promise<void> {
@@ -43,6 +44,11 @@ export async function runRm(id: string, opts: RmOpts): Promise<void> {
   }
   if (removeAll) {
     log.message(`  ${chalk.red('✗')} registry entry`);
+  }
+
+  if (opts.dryRun) {
+    outro(chalk.hex(MUTED)('Dry run — nothing deleted.'));
+    return;
   }
 
   if (!opts.yes) {

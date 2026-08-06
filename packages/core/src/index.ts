@@ -7,3 +7,4 @@ export * from './writer.js';
 export * from './diff.js';
 export * from './sync-engine.js';
 export * from './generation/index.js';
+export * from './scanner/index.js';

@@ -23,6 +23,7 @@ import { BRAND, MUTED, relPath, renderTargetDiff } from './_ui.js';
 interface PushOpts {
   to?: string;
   yes?: boolean;
+  dryRun?: boolean;
   aiAdapt?: boolean;
   provider?: string;
 }
@@ -32,7 +33,7 @@ async function applyAndFinish(
   entry: RegistryEntry,
   element: KenessElement,
   now: string,
-  opts: Pick<PushOpts, 'yes'>,
+  opts: Pick<PushOpts, 'yes' | 'dryRun'>,
   registry: Registry,
 ): Promise<void> {
   if (diffs.length === 0) {
@@ -50,6 +51,11 @@ async function applyAndFinish(
   for (const d of diffs) {
     const adapter = getAdapter(d.appId);
     renderTargetDiff(d, adapter?.name ?? d.appId);
+  }
+
+  if (opts.dryRun) {
+    outro(chalk.hex(MUTED)('Dry run — nothing written.'));
+    return;
   }
 
   if (!opts.yes) {
