@@ -1,11 +1,40 @@
 {
-  "name": "@keness/cli",
-  "version": "0.0.1",
+  "name": "keness",
+  "version": "0.1.0",
+  "description": "Create your skills, agents, rules and MCP configs once — sync them everywhere.",
   "type": "module",
   "bin": {
     "keness": "./bin/keness.js"
   },
   "files": ["bin", "dist"],
+  "keywords": [
+    "ai",
+    "claude",
+    "cursor",
+    "codex",
+    "gemini",
+    "opencode",
+    "skills",
+    "agents",
+    "rules",
+    "mcp",
+    "sync",
+    "local-first",
+    "cli"
+  ],
+  "homepage": "https://keness.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guysilvere/keness.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/guysilvere/keness/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
@@ -25,5 +54,8 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

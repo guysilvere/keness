@@ -1,6 +1,7 @@
 {
   "name": "@keness/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Core adapter engine for Keness — AI coding tool sync library.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -26,5 +27,14 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guysilvere/keness.git",
+    "directory": "packages/core"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
   }
 }
